@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>UENR Library Check-in</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f3;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:1.5rem 1rem}
+  .card{background:#fff;border-radius:16px;padding:1.5rem;width:100%;max-width:360px;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+  .brand{text-align:center;margin-bottom:1.5rem}
+  .brand .logo{font-size:32px;margin-bottom:4px}
+  .brand h1{font-size:18px;font-weight:600;color:#1a1a1a}
+  .brand p{font-size:13px;color:#888;margin-top:2px}
+  .lib-name{font-size:20px;font-weight:600;color:#1a1a1a;text-align:center;margin-bottom:4px}
+  .lib-cap{font-size:13px;color:#888;text-align:center;margin-bottom:1.25rem}
+  .status-box{border-radius:12px;padding:1.25rem;text-align:center;margin-bottom:1.25rem;transition:background 0.3s}
+  .status-box.open{background:#eaf3de}
+  .status-box.busy{background:#faeeda}
+  .status-box.full{background:#fcebeb}
+  .status-seats{font-size:42px;font-weight:700;line-height:1}
+  .status-seats.open{color:#3b6d11}
+  .status-seats.busy{color:#854f0b}
+  .status-seats.full{color:#a32d2d}
+  .status-label{font-size:14px;margin-top:4px}
+  .status-label.open{color:#3b6d11}
+  .status-label.busy{color:#854f0b}
+  .status-label.full{color:#a32d2d}
+  .progress-bg{background:#e5e5e3;border-radius:6px;height:8px;overflow:hidden;margin-bottom:1.25rem}
+  .progress-bar{height:100%;border-radius:6px;transition:width 0.4s,background 0.3s}
+  .bar-open{background:#639922}
+  .bar-busy{background:#ef9f27}
+  .bar-full{background:#e24b4a}
+  .btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem}
+  .btn{padding:14px 10px;border-radius:12px;border:none;font-size:15px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;transition:transform 0.1s,opacity 0.2s}
+  .btn:active{transform:scale(0.96)}
+  .btn:disabled{opacity:0.35;cursor:not-allowed}
+  .btn-icon{font-size:24px}
+  .btn-in{background:#eaf3de;color:#3b6d11}
+  .btn-in:not(:disabled):hover{background:#c0dd97}
+  .btn-out{background:#fcebeb;color:#a32d2d}
+  .btn-out:not(:disabled):hover{background:#f7c1c1}
+  .toast{display:none;text-align:center;padding:10px 14px;border-radius:10px;font-size:14px;font-weight:500;margin-bottom:1rem}
+  .toast.show{display:block}
+  .toast.success{background:#eaf3de;color:#3b6d11}
+  .toast.error{background:#fcebeb;color:#a32d2d}
+  .footer{font-size:11px;color:#aaa;text-align:center;line-height:1.5}
+  .spinner{display:none;text-align:center;padding:2rem;color:#888;font-size:14px}
+  .error-state{display:none;text-align:center;padding:2rem;color:#a32d2d;font-size:14px}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="brand">
+    <div class="logo">📚</div>
+    <h1>UENR Library</h1>
+    <p>Sunyani Campus</p>
+  </div>
+
+  <div class="spinner" id="spinner">Loading…</div>
+  <div class="error-state" id="error-state">Could not load library data.<br>Please try again.</div>
+
+  <div id="main-content" style="display:none">
+    <div class="lib-name" id="lib-name">—</div>
+    <div class="lib-cap" id="lib-cap">—</div>
+    <div class="status-box" id="status-box">
+      <div class="status-seats" id="status-seats">—</div>
+      <div class="status-label" id="status-label">—</div>
+    </div>
+    <div class="progress-bg"><div class="progress-bar" id="progress-bar"></div></div>
+    <div id="toast" class="toast"></div>
+    <div class="btns">
+      <button class="btn btn-in" id="btn-in" onclick="doAction('checkin')" disabled>
+        <span class="btn-icon">→</span> Check in
+      </button>
+      <button class="btn btn-out" id="btn-out" onclick="doAction('checkout')" disabled>
+        <span class="btn-icon">←</span> Check out
+      </button>
+    </div>
+    <div class="footer">Tap once when entering or leaving.<br>No sign-up required.</div>
+  </div>
+</div>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const libId = params.get("lib") || "main";
+let libData = null;
+let busy = false;
+
+function getStatus(pct) {
+  return pct >= 1 ? "full" : pct >= 0.8 ? "busy" : "open";
+}
+
+function render(data) {
+  libData = data;
+  const pct = data.occupied / data.capacity;
+  const s = getStatus(pct);
+  const avail = data.capacity - data.occupied;
+
+  document.getElementById("lib-name").textContent = data.name;
+  document.getElementById("lib-cap").textContent = data.capacity + " total seats";
+
+  const box = document.getElementById("status-box");
+  box.className = "status-box " + s;
+
+  const seats = document.getElementById("status-seats");
+  seats.className = "status-seats " + s;
+  seats.textContent = s === "full" ? "FULL" : avail;
+
+  const lbl = document.getElementById("status-label");
+  lbl.className = "status-label " + s;
+  lbl.textContent = s === "full" ? "No seats available" : s === "busy" ? "Almost full — " + avail + " seats left" : "seats available";
+
+  const bar = document.getElementById("progress-bar");
+  bar.style.width = Math.min(Math.round(pct * 100), 100) + "%";
+  bar.className = "progress-bar bar-" + s;
+
+  document.getElementById("btn-in").disabled = s === "full" || busy;
+  document.getElementById("btn-out").disabled = data.occupied <= 0 || busy;
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = "toast show " + type;
+  setTimeout(() => { t.className = "toast"; }, 2800);
+}
+
+async function loadStatus() {
+  document.getElementById("spinner").style.display = "block";
+  try {
+    const res = await fetch("/api/status/" + libId);
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    document.getElementById("spinner").style.display = "none";
+    document.getElementById("main-content").style.display = "block";
+    render(data);
+  } catch {
+    document.getElementById("spinner").style.display = "none";
+    document.getElementById("error-state").style.display = "block";
+  }
+}
+
+async function doAction(action) {
+  if (busy) return;
+  busy = true;
+  document.getElementById("btn-in").disabled = true;
+  document.getElementById("btn-out").disabled = true;
+  try {
+    const res = await fetch("/api/" + action + "/" + libId, { method: "POST" });
+    const data = await res.json();
+    if (!res.ok) {
+      showToast(data.error || "Something went wrong", "error");
+    } else {
+      showToast(action === "checkin" ? "✓ Checked in — enjoy your study!" : "✓ Checked out — see you next time!", "success");
+      await loadStatus();
+    }
+  } catch {
+    showToast("Network error. Please try again.", "error");
+  }
+  busy = false;
+}
+
+loadStatus();
+// Auto-refresh every 30 seconds
+setInterval(loadStatus, 30000);
+</script>
+</body>
+</html>

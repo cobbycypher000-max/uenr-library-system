@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>UENR Library Dashboard</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f3;color:#1a1a1a;min-height:100vh}
+nav{background:#fff;border-bottom:1px solid #e5e5e3;padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100}
+.nav-left{display:flex;align-items:center;gap:10px}
+.nav-logo{font-size:22px}
+.nav-title{font-size:15px;font-weight:600;color:#1a1a1a}
+.nav-sub{font-size:12px;color:#888;margin-top:1px}
+.nav-right{display:flex;align-items:center;gap:10px}
+.live-dot{width:8px;height:8px;background:#639922;border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.live-label{font-size:12px;color:#639922;font-weight:500}
+.last-update{font-size:11px;color:#aaa}
+.container{max-width:1100px;margin:0 auto;padding:1.5rem}
+.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:1.5rem}
+@media(max-width:640px){.summary-grid{grid-template-columns:repeat(2,1fr)}.libs-grid{grid-template-columns:1fr!important}}
+.stat-card{background:#fff;border-radius:12px;padding:1rem 1.25rem;border:1px solid #e5e5e3}
+.stat-card .lbl{font-size:12px;color:#888;margin-bottom:4px}
+.stat-card .val{font-size:26px;font-weight:600}
+.stat-card .sub{font-size:11px;color:#aaa;margin-top:2px}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.section-title{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:#888}
+.libs-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:1.5rem}
+.lib-card{background:#fff;border-radius:12px;padding:1.1rem 1.25rem;border:1px solid #e5e5e3;border-left:4px solid #e5e5e3;transition:border-color 0.3s}
+.lib-card.open{border-left-color:#639922}
+.lib-card.busy{border-left-color:#ef9f27}
+.lib-card.full{border-left-color:#e24b4a}
+.lib-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.lib-name{font-size:14px;font-weight:600;color:#1a1a1a}
+.lib-cap{font-size:11px;color:#aaa;margin-top:2px}
+.badge{font-size:11px;font-weight:500;padding:3px 10px;border-radius:20px}
+.badge.open{background:#eaf3de;color:#3b6d11}
+.badge.busy{background:#faeeda;color:#854f0b}
+.badge.full{background:#fcebeb;color:#a32d2d}
+.progress-bg{background:#f0f0ee;border-radius:4px;height:7px;overflow:hidden;margin:6px 0 5px}
+.progress-bar{height:100%;border-radius:4px;transition:width 0.5s,background 0.3s}
+.bar-open{background:#639922}
+.bar-busy{background:#ef9f27}
+.bar-full{background:#e24b4a}
+.lib-stats{display:flex;justify-content:space-between;font-size:12px;color:#888;margin-bottom:10px}
+.lib-actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.act-btn{padding:6px 4px;font-size:11px;font-weight:500;border-radius:8px;border:1px solid #e5e5e3;background:#f5f5f3;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:3px;transition:background 0.15s}
+.act-btn:hover{background:#e5e5e3}
+.act-btn.in{border-color:#639922;color:#3b6d11;background:#eaf3de}
+.act-btn.in:hover{background:#c0dd97}
+.act-btn.out{border-color:#e24b4a;color:#a32d2d;background:#fcebeb}
+.act-btn.out:hover{background:#f7c1c1}
+.act-btn.reset{color:#888}
+.act-btn:disabled{opacity:0.35;cursor:not-allowed}
+.bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:700px){.bottom-grid{grid-template-columns:1fr}}
+.log-card,.qr-card{background:#fff;border-radius:12px;padding:1.1rem 1.25rem;border:1px solid #e5e5e3}
+.log-box{max-height:220px;overflow-y:auto}
+.log-item{font-size:12px;padding:5px 0;border-bottom:1px solid #f0f0ee;display:flex;justify-content:space-between;align-items:flex-start;gap:6px}
+.log-item:last-child{border-bottom:none}
+.log-msg{color:#444;flex:1}
+.log-in .log-dot{color:#3b6d11;font-weight:600}
+.log-out .log-dot{color:#a32d2d;font-weight:600}
+.log-reset .log-dot{color:#888;font-weight:600}
+.log-time{font-size:10px;color:#aaa;white-space:nowrap}
+.qr-select{width:100%;padding:8px;border:1px solid #e5e5e3;border-radius:8px;font-size:13px;margin-bottom:12px;background:#f5f5f3}
+.qr-box{display:flex;flex-direction:column;align-items:center;gap:8px}
+#qr-canvas{border-radius:8px;overflow:hidden;padding:8px;background:#fff;border:1px solid #e5e5e3}
+.qr-url{font-size:10px;color:#aaa;text-align:center;word-break:break-all;max-width:200px}
+.qr-print-btn{padding:8px 18px;font-size:12px;font-weight:500;border:1px solid #e5e5e3;border-radius:8px;background:#f5f5f3;cursor:pointer}
+.qr-print-btn:hover{background:#e5e5e3}
+.toast-wrap{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:999;pointer-events:none}
+.toast{display:none;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.12)}
+.toast.show{display:block;animation:fadein 0.2s}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.toast.success{background:#eaf3de;color:#3b6d11}
+.toast.error{background:#fcebeb;color:#a32d2d}
+.empty-log{font-size:12px;color:#aaa;text-align:center;padding:1rem 0}
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-left">
+    <span class="nav-logo">📚</span>
+    <div>
+      <div class="nav-title">UENR Library System</div>
+      <div class="nav-sub">Sunyani Campus — Admin Dashboard</div>
+    </div>
+  </div>
+  <div class="nav-right">
+    <div class="live-dot"></div>
+    <span class="live-label">Live</span>
+    <span class="last-update" id="last-update">—</span>
+  </div>
+</nav>
+
+<div class="container">
+  <!-- Summary -->
+  <div class="summary-grid" id="summary-grid"></div>
+
+  <!-- Libraries -->
+  <div class="section-header">
+    <span class="section-title">Libraries</span>
+    <span style="font-size:11px;color:#aaa">Auto-refreshes every 10s</span>
+  </div>
+  <div class="libs-grid" id="libs-grid"></div>
+
+  <!-- Bottom: log + QR -->
+  <div class="bottom-grid">
+    <div class="log-card">
+      <div class="section-header" style="margin-bottom:10px">
+        <span class="section-title">Activity log</span>
+        <span style="font-size:11px;color:#aaa" id="log-count">—</span>
+      </div>
+      <div class="log-box" id="log-box"><div class="empty-log">No activity yet</div></div>
+    </div>
+    <div class="qr-card">
+      <div class="section-header" style="margin-bottom:10px">
+        <span class="section-title">QR codes</span>
+        <span style="font-size:11px;color:#aaa">Print & place at entrance</span>
+      </div>
+      <select class="qr-select" id="qr-select" onchange="renderQR()">
+        <option value="main">Main Library</option>
+        <option value="annex">Library Annex</option>
+        <option value="hall1">Hall 1 Library</option>
+        <option value="rcees">RCEEs Library</option>
+        <option value="elib">E-Library</option>
+      </select>
+      <div class="qr-box">
+        <canvas id="qr-canvas" width="160" height="160"></canvas>
+        <div class="qr-url" id="qr-url-label">—</div>
+        <button class="qr-print-btn" onclick="printQR()">🖨 Print this QR code</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap"><div class="toast" id="toast"></div></div>
+
+<!-- Tiny QR generator (pure canvas, no external lib needed for production) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+let allData = [];
+let logData = [];
+let qrInstance = null;
+
+function fmt(iso){
+  const d = new Date(iso);
+  return d.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+}
+function fmtDate(iso){
+  const d = new Date(iso);
+  return d.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+}
+
+function showToast(msg, type){
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.className = "toast show " + type;
+  setTimeout(()=>{ t.className = "toast"; }, 2500);
+}
+
+async function fetchStatus(){
+  try {
+    const [sRes, lRes] = await Promise.all([fetch("/api/status"), fetch("/api/log")]);
+    allData = (await sRes.json()).libs;
+    logData = await lRes.json();
+    render();
+    document.getElementById("last-update").textContent = "Updated " + new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+  } catch(e) {
+    console.error("Fetch error", e);
+  }
+}
+
+function render(){
+  renderSummary();
+  renderLibs();
+  renderLog();
+}
+
+function renderSummary(){
+  const total = allData.reduce((a,l)=>a+l.capacity,0);
+  const occ = allData.reduce((a,l)=>a+l.occupied,0);
+  const avail = total - occ;
+  const full = allData.filter(l=>l.status==="full").length;
+  document.getElementById("summary-grid").innerHTML = `
+    <div class="stat-card"><div class="lbl">Total seats</div><div class="val">${total}</div><div class="sub">across ${allData.length} libraries</div></div>
+    <div class="stat-card"><div class="lbl">Occupied now</div><div class="val" style="color:#e24b4a">${occ}</div><div class="sub">${Math.round(occ/total*100)}% utilisation</div></div>
+    <div class="stat-card"><div class="lbl">Available now</div><div class="val" style="color:#639922">${avail}</div><div class="sub">seats free</div></div>
+    <div class="stat-card"><div class="lbl">Full libraries</div><div class="val">${full}</div><div class="sub">of ${allData.length} total</div></div>`;
+}
+
+function renderLibs(){
+  if(!allData.length) return;
+  document.getElementById("libs-grid").innerHTML = allData.map(l=>{
+    const pct = Math.round(l.percentFull);
+    return `<div class="lib-card ${l.status}">
+      <div class="lib-top">
+        <div><div class="lib-name">${l.name}</div><div class="lib-cap">${l.capacity} total seats</div></div>
+        <span class="badge ${l.status}">${l.status==="full"?"Full":l.status==="busy"?"Almost full":"Available"}</span>
+      </div>
+      <div class="progress-bg"><div class="progress-bar bar-${l.status}" style="width:${pct}%"></div></div>
+      <div class="lib-stats"><span>${l.occupied} in · ${l.available} free</span><span>${pct}%</span></div>
+      <div class="lib-actions">
+        <button class="act-btn in" onclick="doAction('checkin','${l.id}')" ${l.status==="full"?"disabled":""}>＋ In</button>
+        <button class="act-btn out" onclick="doAction('checkout','${l.id}')" ${l.occupied<=0?"disabled":""}>－ Out</button>
+        <button class="act-btn reset" onclick="doReset('${l.id}')">↺ Reset</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function renderLog(){
+  const box = document.getElementById("log-box");
+  document.getElementById("log-count").textContent = logData.length + " entries";
+  if(!logData.length){ box.innerHTML='<div class="empty-log">No activity yet</div>'; return; }
+  box.innerHTML = logData.map(e=>{
+    const icon = e.action==="checkin"?"→":e.action==="checkout"?"←":"↺";
+    const cls = e.action==="checkin"?"log-in":e.action==="checkout"?"log-out":"log-reset";
+    return `<div class="log-item ${cls}"><span class="log-dot">${icon}</span><span class="log-msg">${e.library} — ${e.action==="checkin"?"Check in":e.action==="checkout"?"Check out":"Reset"} (${e.available} free)</span><span class="log-time">${fmtDate(e.time)}</span></div>`;
+  }).join("");
+}
+
+async function doAction(action, libId){
+  try {
+    const res = await fetch(`/api/${action}/${libId}`, {method:"POST"});
+    const data = await res.json();
+    if(!res.ok){ showToast(data.error,"error"); return; }
+    showToast(action==="checkin"?"Checked in ✓":"Checked out ✓","success");
+    fetchStatus();
+  } catch { showToast("Network error","error"); }
+}
+
+async function doReset(libId){
+  if(!confirm("Reset this library's count to 0?")) return;
+  try {
+    await fetch(`/api/reset/${libId}`, {method:"POST"});
+    showToast("Count reset to 0","success");
+    fetchStatus();
+  } catch { showToast("Network error","error"); }
+}
+
+// QR code
+const BASE_URL = window.location.origin;
+function renderQR(){
+  const libId = document.getElementById("qr-select").value;
+  const url = `${BASE_URL}/checkin?lib=${libId}`;
+  document.getElementById("qr-url-label").textContent = url;
+  const canvas = document.getElementById("qr-canvas");
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0,0,160,160);
+  // Use QRCode lib to generate into a temp div then draw
+  const tmp = document.createElement("div");
+  tmp.style.display="none";
+  document.body.appendChild(tmp);
+  try {
+    if(qrInstance){ delete qrInstance; tmp.innerHTML=""; }
+    new QRCode(tmp,{text:url,width:144,height:144,colorDark:"#1a1a1a",colorLight:"#ffffff"});
+    setTimeout(()=>{
+      const img = tmp.querySelector("img")||tmp.querySelector("canvas");
+      if(img){ const i=new Image(); i.onload=()=>ctx.drawImage(i,8,8,144,144); i.src=img.src||(img.toDataURL?img.toDataURL():""); }
+      document.body.removeChild(tmp);
+    },100);
+  } catch(e){ document.body.removeChild(tmp); }
+}
+
+function printQR(){
+  const libId = document.getElementById("qr-select").value;
+  const libName = document.getElementById("qr-select").options[document.getElementById("qr-select").selectedIndex].text;
+  const url = `${BASE_URL}/checkin?lib=${libId}`;
+  const canvas = document.getElementById("qr-canvas");
+  const img = canvas.toDataURL();
+  const w = window.open("","_blank");
+  w.document.write(`<!DOCTYPE html><html><head><title>QR - ${libName}</title>
+  <style>body{font-family:sans-serif;text-align:center;padding:40px}h2{margin-bottom:6px}p{color:#888;font-size:13px;margin-bottom:20px}img{border:1px solid #ddd;padding:12px;border-radius:8px}.url{font-size:11px;color:#aaa;margin-top:10px;word-break:break-all}</style>
+  </head><body>
+  <h2>📚 UENR Library</h2>
+  <p>${libName} — Scan to check in or out</p>
+  <img src="${img}" width="200" height="200"/>
+  <div class="url">${url}</div>
+  <script>window.onload=()=>{window.print();window.close()}<\/script>
+  </body></html>`);
+}
+
+// Init
+fetchStatus();
+renderQR();
+setInterval(fetchStatus, 10000); // refresh every 10s
+</script>
+</body>
+</html>
