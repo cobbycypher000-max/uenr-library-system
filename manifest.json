@@ -1,0 +1,21 @@
+{
+  "short_name": "UENRLibrary Seat Tracker",
+  "name": "UENR Library System Dashboard",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "https://uenr-library-system.onrender.com/",
+  "background_color": "#ffffff",
+  "theme_color": "#4A90E2",
+  "display": "standalone",
+  "orientation": "portrait"
+}
